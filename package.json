@@ -12,5 +12,8 @@
   "license": "ISC",
   "devDependencies": {
     "nodemon": "^1.18.4"
+  },
+  "dependencies": {
+    "rss-parser": "^3.4.3"
   }
 }
