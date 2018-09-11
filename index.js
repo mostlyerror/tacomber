@@ -1,9 +1,7 @@
-//console.log(module.paths)
-//const path = require('path')
-// const querystring = require('querystring')
 const { URL, URLSearchParams } = require('url')
 const Parser = require('rss-parser')
 const fs = require('fs')
+
 /*
  * Tacomber
  * "Comb" craigslist looking for sick deals on specific car make and model in a specific
@@ -85,8 +83,8 @@ async function crawl(offset = 0) {
   const feed = await getFeed(searchUrl)
   if (feed.items && feed.items.length > 0) {
     console.log(`${searchUrl}: ${feed.items.length} items found`)
-    allItems = allItems.concat(feed.items)
-    // populate the database?
+    let sources = feed.items.map(item => item.source)
+    allItems = allItems.concat(sources)
     setTimeout(crawl, 500, offset += PAGE_SIZE)
   } else {
     console.log(`${allItems.length} total items found`)
@@ -103,4 +101,16 @@ async function crawl(offset = 0) {
   }
 }
 
-crawl()
+
+// find latest manifest file
+fs.readdir('./data', (err, filenames) => {
+  console.log(filenames)
+  filenames.forEach((filename) => {
+    let file = './data/' + filename
+    fs.stat(file, (err, stats) => {
+      console.log(file, stats)
+    })
+  })
+})
+//crawl()
+
