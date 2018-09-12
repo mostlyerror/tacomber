@@ -90,7 +90,7 @@ async function crawl(offset = 0) {
     console.log(`${allItems.length} total items found`)
     const timeStr = startTime.toISOString()
     const filename = `${timeStr}-${params.city}-${params.make}-${params.model}.json`
-    const path = `data/${filename}`
+    const path = path.resolve('data', filename)
     fs.writeFileSync(path,
       JSON.stringify(allItems),
       (err) => {
