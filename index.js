@@ -1,6 +1,7 @@
 const { URL, URLSearchParams } = require('url')
 const Parser = require('rss-parser')
 const fs = require('fs')
+const path = require('path')
 
 /*
  * Tacomber
@@ -70,7 +71,7 @@ function getFeedItemId({ source } = item) {
 }
 
 var allItems  = []
-async function crawl(offset = 0) {
+function crawl(offset = 0) {
   const startTime = new Date()
   var params = {
     city: 'Denver',
@@ -80,7 +81,7 @@ async function crawl(offset = 0) {
   }
   
   const searchUrl = buildSearchUrl(params).toString()
-  const feed = await getFeed(searchUrl)
+  const feed = getFeed(searchUrl)
   if (feed.items && feed.items.length > 0) {
     console.log(`${searchUrl}: ${feed.items.length} items found`)
     let sources = feed.items.map(item => item.source)
@@ -90,8 +91,8 @@ async function crawl(offset = 0) {
     console.log(`${allItems.length} total items found`)
     const timeStr = startTime.toISOString()
     const filename = `${timeStr}-${params.city}-${params.make}-${params.model}.json`
-    const path = path.resolve('data', filename)
-    fs.writeFileSync(path,
+    const filepath = path.resolve('data', filename)
+    fs.writeFileSync(filepath,
       JSON.stringify(allItems),
       (err) => {
         if (err) console.error('oops')
@@ -101,16 +102,49 @@ async function crawl(offset = 0) {
   }
 }
 
+async function getLatestLinks() {
+  const files = fs.readdir(path.resolve('data'), (err, files) => {
+    if (err) throw(err)
+    const filename = files.sort()[files.length-1]
+    const filepath = path.resolve('data', filename)
 
-// find latest manifest file
-fs.readdir('./data', (err, filenames) => {
-  console.log(filenames)
-  filenames.forEach((filename) => {
-    let file = './data/' + filename
-    fs.stat(file, (err, stats) => {
-      console.log(file, stats)
+    fs.readFile(filepath, function (err, buf) {
+      if (err) throw(err)
+      const links = JSON.parse(buf.toString())
+      return links
     })
   })
-})
-//crawl()
+  return files
+}
+
+
+function getLatestManifest() {
+  return new Promise((resolve, reject) => {
+    fs.readdir(path.resolve('data'), (err, files) => {
+      if (err) throw(err)
+      const latest = files.sort()[files.length-1]
+      resolve(path.resolve('data', latest))
+    })
+  })
+}
+
+function readManifest(manifest) {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path.resolve(manifest), (err, buf) => {
+      if (err) throw(err)
+      resolve(JSON.parse(buf.toString()))
+    })
+  })
+}
+
+async function main() {
+  const filename = await getLatestManifest()
+  const links = await readManifest(filename)
+  for (link of links) {
+    console.log(link)
+  }
+}
+
+main()
+
 
