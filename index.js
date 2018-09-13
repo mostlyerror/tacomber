@@ -137,14 +137,52 @@ function readManifest(manifest) {
   })
 }
 
+// input arr of links to crawl
+// output arr of carDetail Objects
+// [
+//   {
+//     name: 'asdf', 
+//     mileage: 1000, 
+//     price: 5000, 
+//     link: 'www.craigslist....', 
+//     VIN: // '123123123'
+//   },
+//   ...
+// ]
+function getCarDetails(links) {
+  for (link of links) {
+  }
+  // make http call 
+  // construct DOM? cheerio?
+  // if (postingIsRemoved(doc)) {
+  //   skip
+  // else
+  //   extract details
+  // add deets to csv file "database"
+}
+
+// input DOM object,
+// returns bool(presence of span id="has_been_removed")
+function postingIsRemoved(posting) {}
+
+// input DOM object
+// returns carDetails object
+function extractCarDetail(doc) {}
+
+// input carDetailCSVObject?
+// {
+//  headers: [],
+//  rows: [],
+// }
+// returns CSV object(string?)? 
+function buildCsv(carDetails) {}
+
+// main
+//   determine which links to crawl
+//   crawl the links
+//   output a csv
 async function main() {
   const filename = await getLatestManifest()
   const links = await readManifest(filename)
-  for (link of links) {
-    console.log(link)
-  }
 }
-
-main()
-
 
