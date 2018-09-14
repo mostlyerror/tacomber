@@ -2,6 +2,8 @@ const { URL, URLSearchParams } = require('url')
 const Parser = require('rss-parser')
 const fs = require('fs')
 const path = require('path')
+const axios = require('axios')
+const cheerio = require('cheerio')
 
 /*
  * Tacomber
@@ -64,12 +66,6 @@ function getFeed(url) {
   return parser.parseURL(url)
 }
 
-function getFeedItemId({ source } = item) {
-  const pattern = /[0-9]+\.html$/
-  const fileNameMatch = source.match(pattern)
-  return parseInt(fileNameMatch[0].match(/\d+/))
-}
-
 var allItems  = []
 function crawl(offset = 0) {
   const startTime = new Date()
@@ -102,23 +98,24 @@ function crawl(offset = 0) {
   }
 }
 
-async function getLatestLinks() {
-  const files = fs.readdir(path.resolve('data'), (err, files) => {
-    if (err) throw(err)
-    const filename = files.sort()[files.length-1]
-    const filepath = path.resolve('data', filename)
 
-    fs.readFile(filepath, function (err, buf) {
-      if (err) throw(err)
-      const links = JSON.parse(buf.toString())
-      return links
-    })
-  })
-  return files
-}
+// input DOM object,
+// returns bool(presence of span id="has_been_removed")
+function postingIsRemoved(posting) {}
 
+// input DOM object
+// returns carDetails object
+function extractCarDetail(doc) {}
 
-function getLatestManifest() {
+// input carDetailCSVObject?
+// {
+//  headers: [],
+//  rows: [],
+// }
+// returns CSV object(string?)? 
+function buildCsv(carDetails) {}
+
+function getLatestManifestFile() {
   return new Promise((resolve, reject) => {
     fs.readdir(path.resolve('data'), (err, files) => {
       if (err) throw(err)
@@ -137,52 +134,97 @@ function readManifest(manifest) {
   })
 }
 
-// input arr of links to crawl
-// output arr of carDetail Objects
-// [
-//   {
-//     name: 'asdf', 
-//     mileage: 1000, 
-//     price: 5000, 
-//     link: 'www.craigslist....', 
-//     VIN: // '123123123'
-//   },
-//   ...
-// ]
-function getCarDetails(links) {
-  for (link of links) {
-  }
-  // make http call 
-  // construct DOM? cheerio?
-  // if (postingIsRemoved(doc)) {
-  //   skip
-  // else
-  //   extract details
-  // add deets to csv file "database"
+function isRemoved(dom) {
+  return dom('#has_been_removed').length > 0
 }
 
-// input DOM object,
-// returns bool(presence of span id="has_been_removed")
-function postingIsRemoved(posting) {}
+function parseId(url) {
+  const fileNameMatch = url.match(/[0-9]+\.html$/i)
+  return parseInt(fileNameMatch[0].match(/\d+/))
+}
 
-// input DOM object
-// returns carDetails object
-function extractCarDetail(doc) {}
+function parsePrice(dom) {
+  const text = dom('.price').text()
+  return parseInt(text.match(/\d+/))
+}
 
-// input carDetailCSVObject?
-// {
-//  headers: [],
-//  rows: [],
-// }
-// returns CSV object(string?)? 
-function buildCsv(carDetails) {}
+// best effort of finding mileage based on sidebar metadata OR crude text-search
+// (later)
+// TODO: if no luck with meta, try to make sense of user post body?
+function parseMileage(meta, dom) {
+  const keyMatch = Object.keys(meta)
+    .find(str => str.match(/(odometer|mileage|miles)/i))
+  if (keyMatch) return parseInt(meta[keyMatch])
+  return null
+}
+
+// in: cheerio dom obj
+// out: array of strings containing "structured" car metadata (sidebar)
+function parseMeta(dom) {
+  const nodes = dom('p.attrgroup > span')
+  const arr =  nodes.map((i, node) => dom(node).text()).toArray()
+  if (arr.length === 0) return {}
+  const label = arr.shift()
+
+  return arr.reduce((acc, str) => {
+    let [key, val] = str.split(': ')
+    key = key.split(' ').join('_')
+    acc[key] = val
+    return acc
+  }, { label })
+}
+
+// in: html doc, url
+// out: carListing object
+function parseListing(html, link) {
+  const $ = cheerio.load(html)
+  const id = parseId(link)
+  const removed = isRemoved($)
+  if (removed) return { id, link, removed }
+  const price = parsePrice($)
+  const meta = parseMeta($)
+  const mileage = parseMileage(meta, $)
+  return {
+    id,
+    price,
+    link,
+    mileage,
+    meta,
+    removed
+  }
+}
+
+function getCarAttrs(links) {
+  links.map((url, i) => {
+    return new Promise((resolve, reject) => {
+      axios.get(url, {
+        headers: { 
+          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36',
+          'Accept': 'text/html',
+        }
+      })
+        .catch(reject)
+        .then(response => response.data) 
+        .then(html => parseListing(html, url))
+        .then(resolve)
+      // ECONNRESET
+      // ENOTFOUND
+    })
+  })
+}
 
 // main
 //   determine which links to crawl
 //   crawl the links
-//   output a csv
-async function main() {
-  const filename = await getLatestManifest()
-  const links = await readManifest(filename)
-}
+//   transform to carDetail objects
+//   transform to CSV
+(async function main() {
+  crawl()
+  getLatestManifestFile()
+    .then(readManifest)
+    .then(getCarAttrs)
+    .then(console.log)
+    .catch(console.error)
+})()
 
+main()
