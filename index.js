@@ -30,89 +30,8 @@ const cheerio = require('cheerio')
  * - switch out ^mock for a real store
  */
 
-const PAGE_SIZE = 25
-const sort = Array.prototype.sort
-
-/* form url for searching car and truck  listings
- * include relevent meta-filters that will not change, like..
- * bundle duplicates, include nearby areas, etc.
- */
-function buildSearchUrl(params) {
-  const { city, make, model, offset } = params 
-  const urlBase = `https://${city.toLowerCase()}.craigslist.org/search/cta`
-  const url = new URL(urlBase)
-  const qs = new URLSearchParams({
-    auto_make_model: `${make.toLowerCase()} ${model.toLowerCase()}`,
-    auto_title_status: 1, // 'clean' title
-    bundleDuplicates: 1,
-    hasPic: 1,
-    format: 'rss',
-    s: offset,
-  })
-  url.search = qs
-  return url
-}
-
-function getFeed(url) {
-  const parser = new Parser({
-    customFields: {
-      feed: [
-        'syn:updateBase',
-        'syn:updateFrequency',
-        'syn:updatePeriod'
-      ],
-    }
-  })
-  return parser.parseURL(url)
-}
-
-var allItems  = []
-function crawl(offset = 0) {
-  const startTime = new Date()
-  var params = {
-    city: 'Denver',
-    make: 'Toyota',
-    model: 'Tacoma',
-    offset: offset,
-  }
-  
-  const searchUrl = buildSearchUrl(params).toString()
-  const feed = getFeed(searchUrl)
-  if (feed.items && feed.items.length > 0) {
-    console.log(`${searchUrl}: ${feed.items.length} items found`)
-    let sources = feed.items.map(item => item.source)
-    allItems = allItems.concat(sources)
-    setTimeout(crawl, 500, offset += PAGE_SIZE)
-  } else {
-    console.log(`${allItems.length} total items found`)
-    const timeStr = startTime.toISOString()
-    const filename = `${timeStr}-${params.city}-${params.make}-${params.model}.json`
-    const filepath = path.resolve('data', filename)
-    fs.writeFileSync(filepath,
-      JSON.stringify(allItems),
-      (err) => {
-        if (err) console.error('oops')
-      }
-    )
-    console.log("DONE")
-  }
-}
-
-
-// input DOM object,
-// returns bool(presence of span id="has_been_removed")
-function postingIsRemoved(posting) {}
-
-// input DOM object
-// returns carDetails object
 function extractCarDetail(doc) {}
 
-// input carDetailCSVObject?
-// {
-//  headers: [],
-//  rows: [],
-// }
-// returns CSV object(string?)? 
 function buildCsv(carDetails) {}
 
 function getLatestManifestFile() {
@@ -213,13 +132,7 @@ function getCarAttrs(links) {
   })
 }
 
-// main
-//   determine which links to crawl
-//   crawl the links
-//   transform to carDetail objects
-//   transform to CSV
 (async function main() {
-  crawl()
   getLatestManifestFile()
     .then(readManifest)
     .then(getCarAttrs)
