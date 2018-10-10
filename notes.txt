@@ -1,0 +1,12 @@
+"Backlog"
+-------------------------------------------
+take 2d data, add price per mile metric
+spit out 10 "best deals" by price_per_mile metric
+
+generate scatter plot with matplotlib
+
+
+
+
+https://denver.craigslist.org/search/cta?hasPic=1&bundleDuplicates=1&auto_make_model=toyota+tacoma&auto_title_status=1
+https://denver.craigslist.org/search/cta?auto_make_model=toyota+tacoma&bundleDuplicates=1&auto_title_status=1&hasPic=1&format=rss&s=230
