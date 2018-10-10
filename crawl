@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
 
 require './tacomber/crawler'
+DEBUG = ENV.fetch('debug')
 Tacomber::Crawler.crawl!
