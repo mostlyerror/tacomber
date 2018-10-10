@@ -2,10 +2,13 @@ require 'feedjira'
 
 module Tacomber
   class Crawler
+
     def self.crawl!
-      ts = Time.now.to_s.tr(':', '_').split(' ').join('_')
-      puts "Tacomber: starting crawl at #{ts}\n"
-      new("./urls/#{ts}.urls").get_links
+      time = Time.now
+      ts = time.to_s.tr(':', '_').split(' ').join('_')
+      puts "Tacomber: starting crawl at #{time}"
+      path = [Tacomber.base_dir, 'url', "#{ts}.urls"].join('/')
+      new(urls_path).get_links
     ensure
       @fd.close
       puts "done"
@@ -48,5 +51,6 @@ module Tacomber
     def search_url offset
       "https://denver.craigslist.org/search/cta?hasPic=1&bundleDuplicates=1&auto_make_model=toyota+tacoma&auto_title_status=1&format=rss&s=#{offset}"
     end
+
   end
 end

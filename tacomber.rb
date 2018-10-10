@@ -7,3 +7,4 @@ end
 require_relative './tacomber/crawler'
 require_relative './tacomber/manifest'
 require_relative './tacomber/listing'
+require_relative './tacomber/comber'
