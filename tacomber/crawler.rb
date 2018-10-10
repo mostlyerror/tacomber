@@ -4,8 +4,11 @@ module Tacomber
   class Crawler
     def self.crawl!
       ts = Time.now.to_s.tr(':', '_').split(' ').join('_')
+      puts "Tacomber: starting crawl at #{ts}\n"
       new("./urls/#{ts}.urls").get_links
-      puts 'Tacomber: crawling '
+    ensure
+      @fd.close
+      puts "done"
     end
 
     def initialize(urls_file)
@@ -19,6 +22,7 @@ module Tacomber
       begin
         puts search_url(offset) if DEBUG
         feed = Feedjira::Feed.fetch_and_parse search_url(offset)
+        @last_err = nil
       rescue Exception => e
         # TODO: figure out which error to rescue from instead of Exception
         if @last_err
@@ -30,15 +34,13 @@ module Tacomber
         end
       end
 
-      unless feed.entries.empty?
+      if (feed.nil? && !@last_err)
+        get_links(offset)
+      elsif feed.entries && feed.entries.size > 0
         print '.'
         feed.entries.each { |item| @fd.puts item.url }
-        get_links(offset+1)
-      else
-        puts "finished, #{offset+1} pages found"
+        get_links(offset + feed.entries.size)
       end
-    ensure
-      @fd.close
     end
 
     # TODO: make me configurable based on search parameters
