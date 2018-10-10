@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 
 import sys
@@ -6,6 +7,10 @@ import csv
 import json
 import pprint
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
+import numpy as np
+
+
 from decimal import Decimal
 
 
@@ -24,23 +29,26 @@ if not csv_exists:
 def extract_price(car):
     if 'price' in car and len(car['price']) > 2:
         try:
-            return Decimal(car['price'].strip('$'))
+            return int(Decimal(car['price'].strip('$')))
         except:
             print('!!!!!!!')
             print(car['price'])
     return None
 
+def extract_age(car):
+
 def extract_mileage(meta_json):
     meta = json.loads(meta_json)
     if 'mileage' in meta:
-        return meta['mileage']
+        return int(Decimal(meta['mileage']))
     if 'odometer' in meta:
-        return meta['odometer']
+        return int(Decimal(meta['odometer']))
     return None
 
-x_price = []
-y_mileage = []
-
+data = []
+price_data = []
+mileage_data = []
+age_data = []
 with open(csv_path) as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     line_count = 0
@@ -56,14 +64,30 @@ with open(csv_path) as csv_file:
             price = extract_price(car)
             if price == None:
                 pass
-            mileage = extract_mileage(car['meta'])
-            if mileage == None:
-                pass
-            x_price.append(price)
-            y_mileage.append(mileage)
-            # data.append((price, mileage))
+            else:
+                mileage = extract_mileage(car['meta'])
+                if mileage == None:
+                    pass
+                else: 
+                    data.append((price, mileage))
+                    price_data.append(price)
+                    mileage_data.append(mileage)
 
-if len(x_price) == len(y_mileage):
-    print(f'{len(x_price)} pairs found')
-    plt.scatter(x_price, y_mileage)
+
+
+# pp.pprint(price_data)
+print(f'{len(price_data)} prices found')
+
+# pp.pprint(mileage_data)
+print(f'{len(mileage_data)} mileages found')
+
+print(f'{len(data)} pairs found')
+
+def plot():
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(mileage_data, price_data, age_data)
     plt.show()
+
+
+plot()
